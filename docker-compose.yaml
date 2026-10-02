@@ -1,0 +1,203 @@
+services:
+  qbittorrentvpn:
+    image: binhex/arch-qbittorrentvpn:latest
+    container_name: qbittorrentvpn
+    cap_add:
+      - NET_ADMIN
+    environment:
+      - PUID=1026
+      - PGID=100
+      - TZ=Europe/Zurich
+      - VPN_ENABLED=yes
+      - VPN_USER=${VPN_USER}
+      - VPN_PASS=${VPN_PASS}
+      - VPN_PROV=custom
+      - VPN_CLIENT=openvpn
+      - LAN_NETWORK=192.168.1.0/24
+      - WEBUI_PORT=8080
+      - UMASK=000
+      - DEBUG=false
+    volumes:
+      - ./config/qbittorrentvpn:/config
+      - /mnt/synology/downloads:/data
+    ports:
+      - "8080:8080"
+      - "6881:6881"
+      - "6881:6881/udp"
+    restart: unless-stopped
+    networks:
+      - media-net
+
+  prowlarr:
+    image: lscr.io/linuxserver/prowlarr:latest
+    container_name: prowlarr
+    environment:
+      - PUID=1026
+      - PGID=100
+      - TZ=Europe/Zurich
+    volumes:
+      - ./config/prowlarr:/config
+    ports:
+      - "9696:9696"
+    restart: unless-stopped
+    networks:
+      - media-net
+
+  sonarr:
+    image: lscr.io/linuxserver/sonarr:latest
+    container_name: sonarr
+    environment:
+      - PUID=1026
+      - PGID=100
+      - TZ=Europe/Zurich
+    volumes:
+      - ./config/sonarr:/config
+      - /mnt/synology/downloads:/downloads
+      - /mnt/synology/tv:/tv
+    ports:
+      - "8989:8989"
+    restart: unless-stopped
+    networks:
+      - media-net
+
+  radarr:
+    image: lscr.io/linuxserver/radarr:latest
+    container_name: radarr
+    environment:
+      - PUID=1026
+      - PGID=100
+      - TZ=Europe/Zurich
+    volumes:
+      - ./config/radarr:/config
+      - /mnt/synology/downloads:/downloads
+      - /mnt/synology/movies:/movies
+    ports:
+      - "7878:7878"
+    restart: unless-stopped
+    networks:
+      - media-net
+
+  lidarr:
+    image: lscr.io/linuxserver/lidarr:latest
+    container_name: lidarr
+    environment:
+      - PUID=1026
+      - PGID=100
+      - TZ=Europe/Zurich
+    volumes:
+      - ./config/lidarr:/config
+      - /mnt/synology/downloads:/downloads
+      - /mnt/synology/music:/music
+    ports:
+      - "8686:8686"
+    restart: unless-stopped
+    networks:
+      - media-net
+
+  jellyfin:
+    image: lscr.io/linuxserver/jellyfin:latest
+    container_name: jellyfin
+    gpus: all
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/Zurich
+    volumes:
+      - ./cache/jellyfin:/transcode
+      - ./config/jellyfin:/config
+      - /mnt/synology/tv:/media/tv
+      - /mnt/synology/movies:/media/movies
+      - /mnt/synology/music:/media/music
+    ports:
+      - "8096:8096"
+    restart: unless-stopped
+    networks:
+      - media-net
+
+  flaresolverr:
+    image: ghcr.io/flaresolverr/flaresolverr:latest
+    container_name: flaresolverr
+    environment:
+      - LOG_LEVEL=info
+    ports:
+      - "8191:8191"
+    restart: unless-stopped
+    networks:
+      - media-net
+
+  sabnzbd:
+    image: lscr.io/linuxserver/sabnzbd:latest
+    container_name: sabnzbd
+    environment:
+      - PUID=1026
+      - PGID=100
+      - TZ=Europe/Zurich
+    volumes:
+      - ./config/sabnzbd:/config
+      - /mnt/synology/downloads:/downloads
+    ports:
+      - "8081:8080"
+    restart: unless-stopped
+    networks:
+      - media-net
+
+  nzbhydra2:
+    image: lscr.io/linuxserver/nzbhydra2:latest
+    container_name: nzbhydra2
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/Zurich
+    volumes:
+      - ./config/nzbhydra2:/config
+    ports:
+      - "5076:5076"
+    restart: unless-stopped
+    networks:
+      - media-net
+
+  jellyseerr:
+    image: fallenbagel/jellyseerr:latest
+    container_name: jellyseerr
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/Zurich
+    volumes:
+      - ./config/jellyseerr:/app/config
+    ports:
+      - "5055:5055"
+    restart: unless-stopped
+    networks:
+      - media-net
+
+  suggestarr:
+    image: ciuse99/suggestarr:latest
+    container_name: suggestarr
+    ports:
+      - "5001:5000"
+    volumes:
+      - ./config/suggestarr:/app/config/config_files
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/Zurich
+      - LOG_LEVEL=info
+    restart: unless-stopped
+    networks:
+      - media-net
+
+  uptimekuma:
+    image: louislam/uptime-kuma:latest
+    container_name: uptimekuma
+    volumes:
+      - ./config/uptimekuma:/app/data
+    ports:
+      - "3001:3001"
+    restart: unless-stopped
+    networks:
+      - media-net
+
+networks:
+  media-net:
+    driver: bridge

@@ -1,0 +1,18 @@
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Arr app runtime state: databases, API keys, caches, logs (6+ GB)
+config/
+
+# Download / transcode caches
+downloads/
+cache/
+
+# Config backups
+*.back
+*.bak
+*.old
+# Superseded compose backups
+docker-compose.yaml.minix-backup
