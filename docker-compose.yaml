@@ -102,17 +102,36 @@ services:
       - PUID=1000
       - PGID=1000
       - TZ=Europe/Zurich
+      # Tell clients the address they are actually reachable on. Without this the
+      # admin dashboard keeps advertising the container's own IP to anybody who
+      # logs in through the web UI.
+      - JELLYFIN_PublishedServerUrl=https://jellyfin.ghoulhub.uk
     volumes:
       - ./cache/jellyfin:/transcode
       - ./config/jellyfin:/config
       - /mnt/synology/tv:/media/tv
       - /mnt/synology/movies:/media/movies
       - /mnt/synology/music:/media/music
-    ports:
-      - "8096:8096"
+    # No host port. Traefik on the 'proxy' network is the only way in, so Jellyfin
+    # cannot be reached from the LAN or from the internet while bypassing TLS,
+    # the security headers and the rate limit.
+    #
+    # NOTE: there is deliberately NO forward-auth here, and Jellyfin is the one
+    # service where the shared Authentik gate cannot be used. See the long note
+    # at the end of this file before "adding" it back.
+    labels:
+      traefik.enable: "true"
+      traefik.docker.network: "proxy"
+      traefik.http.routers.jellyfin.rule: Host(`jellyfin.ghoulhub.uk`)
+      traefik.http.routers.jellyfin.entrypoints: "websecure"
+      traefik.http.routers.jellyfin.tls: "true"
+      traefik.http.routers.jellyfin.tls.certresolver: "le"
+      traefik.http.routers.jellyfin.priority: "10"
+      traefik.http.routers.jellyfin.middlewares: "security-headers,rate-limit"
     restart: unless-stopped
     networks:
       - media-net
+      - proxy
 
   flaresolverr:
     image: ghcr.io/flaresolverr/flaresolverr:latest
@@ -201,3 +220,51 @@ services:
 networks:
   media-net:
     driver: bridge
+  # Created by ../bootstrap.sh. Lets an app be published through Traefik without
+  # ever binding a host port.
+  proxy:
+    external: true
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Why Jellyfin has no Authentik gate, even though every other app here does
+# ─────────────────────────────────────────────────────────────────────────────
+#
+# Jellyfin 12.1.0 authenticates every single request with its own token:
+#
+#     Authorization: MediaBrowser Client="...", Device="...", Token="..."
+#
+# Native clients (Samsung TV, Android TV, Apple TV, iOS, Android, Roku) and the
+# browser web UI alike send that header and NO session cookie. A forward-auth
+# gate can only answer "does this browser session pass?", so it would 302 the
+# login page but then 302 every single API call once logged in — playback would
+# never start on any device. Verified rather than assumed:
+#
+#     GET /Users/Me  with only a fake authentik_proxy cookie  -> 401
+#     GET /Users/Me  with no credentials                      -> 401
+#
+# So this is not "auth not implemented yet". It is a property of Jellyfin's
+# protocol. The options were:
+#
+#   1. A community SSO plugin that teaches Jellyfin about Authentik. There are
+#      none installed, they lag server releases, and pinning them would mean
+#      rebuilding the image on every Jellyfin upgrade — a fragile dependency
+#      for a media server that must not break.
+#   2. Separate hostnames: native clients ungated, web UI gated. Sounds right
+#      but does not work, for the reason above — the web UI is a native client
+#      too once it has a token.
+#   3. Keep Jellyfin's own authentication, and put the real work into
+#      compensating controls. This is what is done.
+#
+# Jellyfin is therefore classified Type C, not Type A, which the architecture
+# allows for exactly this kind of case. What still protects it:
+#
+#   - Traefik is the only ingress: no host port, so nothing reaches Jellyfin
+#     without TLS, the security headers and the rate limit.
+#   - Cloudflare sits in front of that, so the origin IP is never published
+#     and the only public entry point is proxied HTTPS.
+#   - The rate limit is the real protection here: Jellyfin has no brute-force
+#     lockout, and password guessing is the one attack that remains possible.
+#   - Jellyfin's own admin password must be long and unique. Its API keys and
+#     device tokens are stored hashed in ./config/jellyfin, which Kopia backs up.
+#
+# Re-check this decision if Jellyfin ever ships first-party OIDC/SAML.
