@@ -22,7 +22,9 @@ services:
       - /mnt/synology/downloads:/data
     # Split deliberately:
     #   8080   the WebUI, where your full download history and every file on
-    #           your NAS is browsable. Loopback + tailnet only.
+    #           your NAS is browsable. LAN reachable on purpose - you admin
+    #           it from your phone; the tunnel does not route it, so this is
+    #           home-LAN only, and it still demands its own login.
     #   6881   the BitTorrent peer port, PRESERVED ON 0.0.0.0 (tcp + udp).
     #           Peers connect inbound from the internet and cannot be told to
     #           use a different port, so binding this to loopback would simply
@@ -34,8 +36,7 @@ services:
     # this subnet (it does, see above), which is also why the published ports
     # keep working with NET_ADMIN in play.
     ports:
-      - "127.0.0.1:${QBITTORRENT_PORT:-8080}:8080"
-      - "${TAILSCALE_IP:?TAILSCALE_IP unset - run ../bootstrap.sh}:${QBITTORRENT_PORT:-8080}:8080"
+      - "${QBITTORRENT_PORT:-8080}:8080"
       - "6881:6881"
       - "6881:6881/udp"
     restart: unless-stopped
@@ -51,11 +52,15 @@ services:
       - TZ=Europe/Zurich
     volumes:
       - ./config/prowlarr:/config
-    # Loopback + tailnet, never 0.0.0.0. Prowlarr's API key is the only thing
-    # between an outsider and your whole indexer history.
+    # LAN reachable on purpose. You administer these from your phone and
+    # laptop, and the Cloudflare tunnel deliberately does NOT route any of
+    # them, so "LAN reachable" is the whole exposure: guests and IoT devices
+    # on the home Wi-Fi can load the login page, nothing more. Every one of
+    # these services requires its own credentials before showing any data.
+    # Prowlarr's API key is the only thing between an outsider and your whole
+    # indexer history, so keep that key secret.
     ports:
-      - "127.0.0.1:${PROWLARR_PORT:-9696}:9696"
-      - "${TAILSCALE_IP:?TAILSCALE_IP unset - run ../bootstrap.sh}:${PROWLARR_PORT:-9696}:9696"
+      - "${PROWLARR_PORT:-9696}:9696"
     restart: unless-stopped
     networks:
       - media-net
@@ -71,10 +76,13 @@ services:
       - ./config/sonarr:/config
       - /mnt/synology/downloads:/downloads
       - /mnt/synology/tv:/tv
-    # Loopback + tailnet, never 0.0.0.0.
+    # LAN reachable on purpose. You administer these from your phone and
+    # laptop, and the Cloudflare tunnel deliberately does NOT route any of
+    # them, so "LAN reachable" is the whole exposure: guests and IoT devices
+    # on the home Wi-Fi can load the login page, nothing more. Every one of
+    # these services requires its own credentials before showing any data.
     ports:
-      - "127.0.0.1:${SONARR_PORT:-8989}:8989"
-      - "${TAILSCALE_IP:?TAILSCALE_IP unset - run ../bootstrap.sh}:${SONARR_PORT:-8989}:8989"
+      - "${SONARR_PORT:-8989}:8989"
     restart: unless-stopped
     networks:
       - media-net
@@ -90,10 +98,13 @@ services:
       - ./config/radarr:/config
       - /mnt/synology/downloads:/downloads
       - /mnt/synology/movies:/movies
-    # Loopback + tailnet, never 0.0.0.0.
+    # LAN reachable on purpose. You administer these from your phone and
+    # laptop, and the Cloudflare tunnel deliberately does NOT route any of
+    # them, so "LAN reachable" is the whole exposure: guests and IoT devices
+    # on the home Wi-Fi can load the login page, nothing more. Every one of
+    # these services requires its own credentials before showing any data.
     ports:
-      - "127.0.0.1:${RADARR_PORT:-7878}:7878"
-      - "${TAILSCALE_IP:?TAILSCALE_IP unset - run ../bootstrap.sh}:${RADARR_PORT:-7878}:7878"
+      - "${RADARR_PORT:-7878}:7878"
     restart: unless-stopped
     networks:
       - media-net
@@ -109,10 +120,13 @@ services:
       - ./config/lidarr:/config
       - /mnt/synology/downloads:/downloads
       - /mnt/synology/music:/music
-    # Loopback + tailnet, never 0.0.0.0.
+    # LAN reachable on purpose. You administer these from your phone and
+    # laptop, and the Cloudflare tunnel deliberately does NOT route any of
+    # them, so "LAN reachable" is the whole exposure: guests and IoT devices
+    # on the home Wi-Fi can load the login page, nothing more. Every one of
+    # these services requires its own credentials before showing any data.
     ports:
-      - "127.0.0.1:${LIDARR_PORT:-8686}:8686"
-      - "${TAILSCALE_IP:?TAILSCALE_IP unset - run ../bootstrap.sh}:${LIDARR_PORT:-8686}:8686"
+      - "${LIDARR_PORT:-8686}:8686"
     restart: unless-stopped
     networks:
       - media-net
@@ -180,10 +194,13 @@ services:
     volumes:
       - ./config/sabnzbd:/config
       - /mnt/synology/downloads:/downloads
-    # Loopback + tailnet, never 0.0.0.0.
+    # LAN reachable on purpose. You administer these from your phone and
+    # laptop, and the Cloudflare tunnel deliberately does NOT route any of
+    # them, so "LAN reachable" is the whole exposure: guests and IoT devices
+    # on the home Wi-Fi can load the login page, nothing more. Every one of
+    # these services requires its own credentials before showing any data.
     ports:
-      - "127.0.0.1:${SABNZBD_PORT:-8081}:8080"
-      - "${TAILSCALE_IP:?TAILSCALE_IP unset - run ../bootstrap.sh}:${SABNZBD_PORT:-8081}:8080"
+      - "${SABNZBD_PORT:-8081}:8080"
     restart: unless-stopped
     networks:
       - media-net
@@ -197,11 +214,15 @@ services:
       - TZ=Europe/Zurich
     volumes:
       - ./config/nzbhydra2:/config
-    # Loopback + tailnet, never 0.0.0.0. NZBHydra2 indexes every indexer you
+    # LAN reachable on purpose. You administer these from your phone and
+    # laptop, and the Cloudflare tunnel deliberately does NOT route any of
+    # them, so "LAN reachable" is the whole exposure: guests and IoT devices
+    # on the home Wi-Fi can load the login page, nothing more. Every one of
+    # these services requires its own credentials before showing any data.
+    # NZBHydra2 indexes every indexer you
     # have, which is a map of what you watch.
     ports:
-      - "127.0.0.1:${NZBHYDRA_PORT:-5076}:5076"
-      - "${TAILSCALE_IP:?TAILSCALE_IP unset - run ../bootstrap.sh}:${NZBHYDRA_PORT:-5076}:5076"
+      - "${NZBHYDRA_PORT:-5076}:5076"
     restart: unless-stopped
     networks:
       - media-net
@@ -250,10 +271,13 @@ services:
   suggestarr:
     image: ciuse99/suggestarr:latest
     container_name: suggestarr
-    # Loopback + tailnet, never 0.0.0.0.
+    # LAN reachable on purpose. You administer these from your phone and
+    # laptop, and the Cloudflare tunnel deliberately does NOT route any of
+    # them, so "LAN reachable" is the whole exposure: guests and IoT devices
+    # on the home Wi-Fi can load the login page, nothing more. Every one of
+    # these services requires its own credentials before showing any data.
     ports:
-      - "127.0.0.1:${SUGGESTARR_PORT:-5001}:5000"
-      - "${TAILSCALE_IP:?TAILSCALE_IP unset - run ../bootstrap.sh}:${SUGGESTARR_PORT:-5001}:5000"
+      - "${SUGGESTARR_PORT:-5001}:5000"
     volumes:
       - ./config/suggestarr:/app/config/config_files
     environment:
@@ -270,10 +294,13 @@ services:
     container_name: uptimekuma
     volumes:
       - ./config/uptimekuma:/app/data
-    # Loopback + tailnet, never 0.0.0.0.
+    # LAN reachable on purpose. You administer these from your phone and
+    # laptop, and the Cloudflare tunnel deliberately does NOT route any of
+    # them, so "LAN reachable" is the whole exposure: guests and IoT devices
+    # on the home Wi-Fi can load the login page, nothing more. Every one of
+    # these services requires its own credentials before showing any data.
     ports:
-      - "127.0.0.1:${UPTIMEKUMA_PORT:-3001}:3001"
-      - "${TAILSCALE_IP:?TAILSCALE_IP unset - run ../bootstrap.sh}:${UPTIMEKUMA_PORT:-3001}:3001"
+      - "${UPTIMEKUMA_PORT:-3001}:3001"
     restart: unless-stopped
     networks:
       - media-net
