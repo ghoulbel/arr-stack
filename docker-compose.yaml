@@ -184,11 +184,37 @@ services:
       - TZ=Europe/Zurich
     volumes:
       - ./config/jellyseerr:/app/config
-    ports:
-      - "5055:5055"
+    # No host port: this was reachable from the internet with no Authentik gate
+    # at all, because the tunnel pointed straight at the published port and
+    # bypassed Traefik completely. Anyone who found the hostname could add
+    # anything to the library queue and trigger downloads.
+    #
+    # Forward-auth works here (unlike on Jellyfin) because Jellyseerr keeps a
+    # normal express-session cookie. It has no native clients, so nothing else
+    # depends on a token-only path.
+    labels:
+      traefik.enable: "true"
+      traefik.docker.network: "proxy"
+      traefik.http.routers.jellyseerr.rule: Host(`jellyseerr.ghoulhub.uk`)
+      traefik.http.routers.jellyseerr.entrypoints: "websecure"
+      traefik.http.routers.jellyseerr.tls: "true"
+      traefik.http.routers.jellyseerr.tls.certresolver: "le"
+      traefik.http.routers.jellyseerr.priority: "10"
+      traefik.http.routers.jellyseerr.middlewares: "authentik-forwardauth,security-headers,rate-limit"
+      # Companion router for the Authentik OAuth callback. It must outrank the
+      # router above, otherwise the callback is caught by the forward-auth
+      # middleware itself and redirects to the login page forever.
+      traefik.http.routers.jellyseerr-outpost.rule: Host(`jellyseerr.ghoulhub.uk`) && PathPrefix(`/outpost.goauthentik.io/`)
+      traefik.http.routers.jellyseerr-outpost.entrypoints: "websecure"
+      traefik.http.routers.jellyseerr-outpost.tls: "true"
+      traefik.http.routers.jellyseerr-outpost.tls.certresolver: "le"
+      traefik.http.routers.jellyseerr-outpost.priority: "15"
+      traefik.http.routers.jellyseerr-outpost.service: "authentik-outpost"
+      traefik.http.routers.jellyseerr-outpost.middlewares: "security-headers,rate-limit"
     restart: unless-stopped
     networks:
       - media-net
+      - proxy
 
   suggestarr:
     image: ciuse99/suggestarr:latest
