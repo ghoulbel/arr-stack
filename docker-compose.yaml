@@ -20,8 +20,22 @@ services:
     volumes:
       - ./config/qbittorrentvpn:/config
       - /mnt/synology/downloads:/data
+    # Split deliberately:
+    #   8080   the WebUI, where your full download history and every file on
+    #           your NAS is browsable. Loopback + tailnet only.
+    #   6881   the BitTorrent peer port, PRESERVED ON 0.0.0.0 (tcp + udp).
+    #           Peers connect inbound from the internet and cannot be told to
+    #           use a different port, so binding this to loopback would simply
+    #           make every torrent arrive via a tracker or DHT instead, much
+    #           slower. Unlike the WebUI this port exposes no data — an
+    #           unsolicited packet gets a protocol rejection and nothing more.
+    #
+    # The VPN kills the container's own LAN access unless LAN_NETWORK covers
+    # this subnet (it does, see above), which is also why the published ports
+    # keep working with NET_ADMIN in play.
     ports:
-      - "8080:8080"
+      - "127.0.0.1:${QBITTORRENT_PORT:-8080}:8080"
+      - "${TAILSCALE_IP:?TAILSCALE_IP unset - run ../bootstrap.sh}:${QBITTORRENT_PORT:-8080}:8080"
       - "6881:6881"
       - "6881:6881/udp"
     restart: unless-stopped
@@ -37,8 +51,11 @@ services:
       - TZ=Europe/Zurich
     volumes:
       - ./config/prowlarr:/config
+    # Loopback + tailnet, never 0.0.0.0. Prowlarr's API key is the only thing
+    # between an outsider and your whole indexer history.
     ports:
-      - "9696:9696"
+      - "127.0.0.1:${PROWLARR_PORT:-9696}:9696"
+      - "${TAILSCALE_IP:?TAILSCALE_IP unset - run ../bootstrap.sh}:${PROWLARR_PORT:-9696}:9696"
     restart: unless-stopped
     networks:
       - media-net
@@ -54,8 +71,10 @@ services:
       - ./config/sonarr:/config
       - /mnt/synology/downloads:/downloads
       - /mnt/synology/tv:/tv
+    # Loopback + tailnet, never 0.0.0.0.
     ports:
-      - "8989:8989"
+      - "127.0.0.1:${SONARR_PORT:-8989}:8989"
+      - "${TAILSCALE_IP:?TAILSCALE_IP unset - run ../bootstrap.sh}:${SONARR_PORT:-8989}:8989"
     restart: unless-stopped
     networks:
       - media-net
@@ -71,8 +90,10 @@ services:
       - ./config/radarr:/config
       - /mnt/synology/downloads:/downloads
       - /mnt/synology/movies:/movies
+    # Loopback + tailnet, never 0.0.0.0.
     ports:
-      - "7878:7878"
+      - "127.0.0.1:${RADARR_PORT:-7878}:7878"
+      - "${TAILSCALE_IP:?TAILSCALE_IP unset - run ../bootstrap.sh}:${RADARR_PORT:-7878}:7878"
     restart: unless-stopped
     networks:
       - media-net
@@ -88,8 +109,10 @@ services:
       - ./config/lidarr:/config
       - /mnt/synology/downloads:/downloads
       - /mnt/synology/music:/music
+    # Loopback + tailnet, never 0.0.0.0.
     ports:
-      - "8686:8686"
+      - "127.0.0.1:${LIDARR_PORT:-8686}:8686"
+      - "${TAILSCALE_IP:?TAILSCALE_IP unset - run ../bootstrap.sh}:${LIDARR_PORT:-8686}:8686"
     restart: unless-stopped
     networks:
       - media-net
@@ -138,8 +161,11 @@ services:
     container_name: flaresolverr
     environment:
       - LOG_LEVEL=info
-    ports:
-      - "8191:8191"
+    # No `ports:` at all. FlareSolverr is a headless browser used only to fetch
+    # indexer pages, and nothing outside this compose file calls it (checked:
+    # no config references it by host address). It is reached over media-net.
+    # Publishing it meant any device on the LAN could drive a browser on this
+    # host and read its output.
     restart: unless-stopped
     networks:
       - media-net
@@ -154,8 +180,10 @@ services:
     volumes:
       - ./config/sabnzbd:/config
       - /mnt/synology/downloads:/downloads
+    # Loopback + tailnet, never 0.0.0.0.
     ports:
-      - "8081:8080"
+      - "127.0.0.1:${SABNZBD_PORT:-8081}:8080"
+      - "${TAILSCALE_IP:?TAILSCALE_IP unset - run ../bootstrap.sh}:${SABNZBD_PORT:-8081}:8080"
     restart: unless-stopped
     networks:
       - media-net
@@ -169,8 +197,11 @@ services:
       - TZ=Europe/Zurich
     volumes:
       - ./config/nzbhydra2:/config
+    # Loopback + tailnet, never 0.0.0.0. NZBHydra2 indexes every indexer you
+    # have, which is a map of what you watch.
     ports:
-      - "5076:5076"
+      - "127.0.0.1:${NZBHYDRA_PORT:-5076}:5076"
+      - "${TAILSCALE_IP:?TAILSCALE_IP unset - run ../bootstrap.sh}:${NZBHYDRA_PORT:-5076}:5076"
     restart: unless-stopped
     networks:
       - media-net
@@ -219,8 +250,10 @@ services:
   suggestarr:
     image: ciuse99/suggestarr:latest
     container_name: suggestarr
+    # Loopback + tailnet, never 0.0.0.0.
     ports:
-      - "5001:5000"
+      - "127.0.0.1:${SUGGESTARR_PORT:-5001}:5000"
+      - "${TAILSCALE_IP:?TAILSCALE_IP unset - run ../bootstrap.sh}:${SUGGESTARR_PORT:-5001}:5000"
     volumes:
       - ./config/suggestarr:/app/config/config_files
     environment:
@@ -237,8 +270,10 @@ services:
     container_name: uptimekuma
     volumes:
       - ./config/uptimekuma:/app/data
+    # Loopback + tailnet, never 0.0.0.0.
     ports:
-      - "3001:3001"
+      - "127.0.0.1:${UPTIMEKUMA_PORT:-3001}:3001"
+      - "${TAILSCALE_IP:?TAILSCALE_IP unset - run ../bootstrap.sh}:${UPTIMEKUMA_PORT:-3001}:3001"
     restart: unless-stopped
     networks:
       - media-net
