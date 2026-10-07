@@ -134,7 +134,26 @@ services:
   jellyfin:
     image: lscr.io/linuxserver/jellyfin:latest
     container_name: jellyfin
-    gpus: all
+    # ── AMD / VAAPI instead of NVIDIA CUDA ────────────────────────────────────
+    # On the old ROG-Strix (RTX 4060 Laptop) this was `gpus: all`, which gave
+    # Jellyfin NVENC/NVDEC hardware transcoding. The new host is a GMKtec
+    # Elite ER937-AI with a Radeon 890M, so `gpus: all` does nothing useful and
+    # on a machine without the NVIDIA container toolkit it errors outright.
+    #
+    # VAAPI is the AMD equivalent and the LinuxServer image auto-detects it from
+    # the render node — no extra driver env var needed. Verify afterwards with
+    # Jellyfin > Dashboard > Playback > Transcoding, which should show VAAPI
+    # rather than "none". If it still says none, check `vaapi <render node>` on
+    # the host is not reporting "vainfo: Driver version: Mesa" errors first.
+    #
+    # The render GID is resolved at bootstrap time and published as
+    # ${RENDER_GID} — never hard-code a number. It was 993 on the old MiniX but
+    # 993 is the `sgx` group on ROG-Strix, so a copied number silently gives
+    # Jellyfin no access to /dev/dri and transcoding quietly falls back to CPU.
+    devices:
+      - /dev/dri/renderD128:/dev/dri/renderD128
+    group_add:
+      - "${RENDER_GID:?RENDER_GID unset - run ../bootstrap.sh}"
     environment:
       - PUID=1000
       - PGID=1000
