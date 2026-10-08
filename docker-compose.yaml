@@ -1,6 +1,6 @@
 services:
   qbittorrentvpn:
-    image: binhex/arch-qbittorrentvpn:latest
+    image: binhex/arch-qbittorrentvpn@sha256:68155d839811904c61587741950f804baffc98fc06bce1bd1efe83342da1e760
     container_name: qbittorrentvpn
     cap_add:
       - NET_ADMIN
@@ -44,7 +44,7 @@ services:
       - media-net
 
   prowlarr:
-    image: lscr.io/linuxserver/prowlarr:latest
+    image: lscr.io/linuxserver/prowlarr@sha256:f9151e5bc1025c6d0a630d503210cdcb6bb55a7cc098562609d96a408d838902
     container_name: prowlarr
     environment:
       - PUID=${PUID:-1000}
@@ -66,7 +66,7 @@ services:
       - media-net
 
   sonarr:
-    image: lscr.io/linuxserver/sonarr:latest
+    image: lscr.io/linuxserver/sonarr@sha256:f247545d23ba8b233d6604575347e48a623fe6ad75dda02348bf81917f3b5c06
     container_name: sonarr
     environment:
       - PUID=${PUID:-1000}
@@ -88,7 +88,7 @@ services:
       - media-net
 
   radarr:
-    image: lscr.io/linuxserver/radarr:latest
+    image: lscr.io/linuxserver/radarr@sha256:7dfd049e79c00b16fbc29c3f5d96a9e7b9e73a23930b4c5b3c4541d60b366814
     container_name: radarr
     environment:
       - PUID=${PUID:-1000}
@@ -110,7 +110,7 @@ services:
       - media-net
 
   lidarr:
-    image: lscr.io/linuxserver/lidarr:latest
+    image: lscr.io/linuxserver/lidarr@sha256:67887807b13ae025c0fe979da298347c8609969087ab064c81d8e9acc1e06bbf
     container_name: lidarr
     environment:
       - PUID=${PUID:-1000}
@@ -132,7 +132,7 @@ services:
       - media-net
 
   jellyfin:
-    image: lscr.io/linuxserver/jellyfin:latest
+    image: lscr.io/linuxserver/jellyfin@sha256:1bb4f88d822a0510bb3604b68aacb80d77c1d2a30181e500090c65111b98723b
     container_name: jellyfin
     devices:
       - /dev/dri/renderD128:/dev/dri/renderD128
@@ -174,7 +174,7 @@ services:
       - proxy
 
   flaresolverr:
-    image: ghcr.io/flaresolverr/flaresolverr:latest
+    image: ghcr.io/flaresolverr/flaresolverr@sha256:c80ae007ce2ccdcd217a12426e4f039ef763ff90738c808d38810c3e59323767
     container_name: flaresolverr
     environment:
       - LOG_LEVEL=info
@@ -188,7 +188,7 @@ services:
       - media-net
 
   sabnzbd:
-    image: lscr.io/linuxserver/sabnzbd:latest
+    image: lscr.io/linuxserver/sabnzbd@sha256:793828eab1722556131d37187115a9d3e3b9703e03a55731a07f2e0fe4edc2c7
     container_name: sabnzbd
     environment:
       - PUID=${PUID:-1000}
@@ -209,7 +209,7 @@ services:
       - media-net
 
   nzbhydra2:
-    image: lscr.io/linuxserver/nzbhydra2:latest
+    image: lscr.io/linuxserver/nzbhydra2@sha256:123782636d66dc299b3addb617fd720a55ac2f858fa8ca312892bf9176492d58
     container_name: nzbhydra2
     environment:
       - PUID=1000
@@ -231,7 +231,7 @@ services:
       - media-net
 
   jellyseerr:
-    image: fallenbagel/jellyseerr:latest
+    image: fallenbagel/jellyseerr@sha256:4538137bc5af902dece165f2bf73776d9cf4eafb6dd714670724af8f3eb77764
     container_name: jellyseerr
     environment:
       - PUID=1000
@@ -272,7 +272,7 @@ services:
       - proxy
 
   suggestarr:
-    image: ciuse99/suggestarr:latest
+    image: ciuse99/suggestarr@sha256:932b298a2ad5e888342df81434cacd7641df9f0b99478a1243dbc436590f2a7e
     container_name: suggestarr
     # LAN reachable on purpose. You administer these from your phone and
     # laptop, and the Cloudflare tunnel deliberately does NOT route any of
@@ -293,7 +293,7 @@ services:
       - media-net
 
   uptimekuma:
-    image: louislam/uptime-kuma:latest
+    image: louislam/uptime-kuma@sha256:70233f4acb5163fd2a59a49909cf01e44415cecff13dba69e3a86647a2919f83
     container_name: uptimekuma
     volumes:
       - ./config/uptimekuma:/app/data
